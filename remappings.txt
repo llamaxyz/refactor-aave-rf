@@ -1,2 +1,4 @@
 ds-test/=lib/ds-test/src/
 @openzeppelin/=lib/openzeppelin-contracts/contracts/
+@aave/=lib/protocol-v2/contracts/
+@balancer/=lib/balancer-v2-monorepo/pkg/
