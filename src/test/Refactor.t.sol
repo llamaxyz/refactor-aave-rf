@@ -40,7 +40,7 @@ contract RefactorTest is DSTest {
         assertEq(address(reserveFactorV1), tokenDistributor);
 
         // Execute as aave governance
-        hevm.startPrank(0xEE56e2B3D491590B5b31738cC34d5232F378a8D5);
+        hevm.startPrank(AAVE_EXECUTOR);
         hevm.deal(address(0xEE56e2B3D491590B5b31738cC34d5232F378a8D5), 100000000000);
         emit log_address(msg.sender);
         myRefactor.execute();
