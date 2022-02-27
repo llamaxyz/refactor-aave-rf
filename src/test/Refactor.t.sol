@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.12;
+pragma solidity 0.8.10;
 
-import {ERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
 import "../interfaces/IReserveFactorV1.sol";
 import "../interfaces/IAddressesProvider.sol";
 import "ds-test/test.sol";

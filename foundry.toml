@@ -4,5 +4,6 @@ out = 'out'
 libs = ['lib']
 remappings = ['ds-test/=lib/ds-test/src/']
 sender = '0xEE56e2B3D491590B5b31738cC34d5232F378a8D5'
+solc-version = "0.8.10"
 
 # See more config options https://github.com/gakonst/foundry/tree/master/config
