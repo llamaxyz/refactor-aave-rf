@@ -38,14 +38,32 @@ contract Refactor {
     /// @notice Stable BTC balancer pool id.
     bytes32 private constant balancerBtcPoolId = 0xfeadd389a5c427952d8fdb8057d6c8ba1156cc56000000000000000000000066;
 
-    /// @notice AAVE's wrapped BTC lending pool.
-    ILendingPool private constant wbtcLendingPool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
+    /// @notice AAVE V2 lending pool.
+    ILendingPool private constant lendingPool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
 
     /// @notice awBtc token.
     ERC20 private constant awBtc = ERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
 
+    /// @notice aDai token.
+    ERC20 private constant aDai = ERC20(0x028171bCA77440897B824Ca71D1c56caC55b68A3);
+
+    /// @notice aUsdc token.
+    ERC20 private constant aUsdc = ERC20(0xBcca60bB61934080951369a648Fb03DF4F96263C);
+
+    /// @notice aUsdt token.
+    ERC20 private constant aUsdt = ERC20(0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811);
+
     /// @notice wBtc token.
     address private constant wBtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+
+    /// @notice dai token.
+    address private constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+
+    /// @notice usdc token.
+    address private constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+
+    /// @notice usdt token.
+    address private constant usdt = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
     /*///////////////////////////////////////////////////////////////
                                STORAGE
@@ -53,27 +71,24 @@ contract Refactor {
 
     address[] private tokenAddresses = [
         wBtc,
-        /// @notice DAI
-        0x6B175474E89094C44Da98b954EedeAC495271d0F,
-        /// @notice USDC
-        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,
-        /// @notice USDT
-        0xdAC17F958D2ee523a2206206994597C13D831ec7,
-        /// @notice KNC
+        dai,
+        usdc,
+        usdt,
+        // KNC
         0xdd974D5C2e2928deA5F71b9825b8b646686BD200,
-        /// @notice MKR
+        // MKR
         0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2,
-        /// @notice MANA
+        // MANA
         0x0F5D2fB29fb7d3CFeE444a200298f468908cC942,
-        /// @notice BUSD
+        // BUSD
         0x4Fabb145d64652a948d72533023f6E7A623C7C53,
-        /// @notice YFI
+        // YFI
         0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e,
-        /// @notice LINK
+        // LINK
         0x514910771AF9Ca656af840dff83E8264EcF986CA,
-        /// @notice UNI
+        // UNI
         0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984,
-        /// @notice AAVE
+        // AAVE
         0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9
     ];
 
@@ -85,14 +100,17 @@ contract Refactor {
         // reserveFactorV1.distribute(tokens);
 
         // Approve this contract to move assets on v2's behalf
+        // TODO: Only get the balances required
         uint256 tokenLength = tokenAddresses.length;
         for (uint256 i = 0; i < tokenLength; i++) {
-            collector.approve(tokenAddresses[i], address(this), ERC20(tokenAddresses[i]).balanceOf(reserveFactorV2));
+            collector.transfer(tokenAddresses[i], address(this), ERC20(tokenAddresses[i]).balanceOf(reserveFactorV2));
         }
 
-        // Redeem all a tokens for underlying ERC-20s
-        // TODO: Implement transfer aTokens to contract and implement withdrawals
-        wbtcLendingPool.withdraw(wBtc, awBtc.balanceOf(reserveFactorV2), reserveFactorV2);
+        // Redeem all aTokens for underlying ERC-20s
+        wbtcLendingPool.withdraw(wBtc, awBtc.balanceOf(address(this)), address(this));
+        lendingPool.withdraw(dai, aDai.balanceOf(address(this)), address(this));
+        lendingPool.withdraw(usdc, aUsdc.balanceOf(address(this)), address(this));
+        lendingPool.withdraw(usdt, aUsdt.balanceOf(address(this)), address(this));
 
         // Redeem and Deposit wBTC in balancer btc vault
         // IVault.JoinPoolRequest request = IVault.JoinPoolRequest([wBtc], [10], );

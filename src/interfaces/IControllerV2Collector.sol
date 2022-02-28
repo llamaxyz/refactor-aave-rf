@@ -2,7 +2,7 @@
 pragma solidity 0.8.10;
 
 interface IControllerV2Collector {
-    function approve(
+    function transfer(
         address,
         address,
         uint256
