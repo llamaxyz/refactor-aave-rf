@@ -31,11 +31,11 @@ contract Refactor {
     /// @notice AAVE's V1 Reserve Factor.
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
 
-    /// @notice The stable BTC balancer pool.
-    /// @dev LP token symbol is `staBAL3-BTC`
-    IVault private constant balancerBtcPool = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+    /// @notice Balancer V2 pool.
+    IVault private constant balancerPool = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
 
     /// @notice Stable BTC balancer pool id.
+    /// @dev LP token symbol is `staBAL3-BTC`
     bytes32 private constant balancerBtcPoolId = 0xfeadd389a5c427952d8fdb8057d6c8ba1156cc56000000000000000000000066;
 
     /// @notice AAVE V2 lending pool.
@@ -107,13 +107,34 @@ contract Refactor {
         }
 
         // Redeem all aTokens for underlying ERC-20s
-        wbtcLendingPool.withdraw(wBtc, awBtc.balanceOf(address(this)), address(this));
+        lendingPool.withdraw(wBtc, awBtc.balanceOf(address(this)), address(this));
         lendingPool.withdraw(dai, aDai.balanceOf(address(this)), address(this));
         lendingPool.withdraw(usdc, aUsdc.balanceOf(address(this)), address(this));
         lendingPool.withdraw(usdt, aUsdt.balanceOf(address(this)), address(this));
 
         // Redeem and Deposit wBTC in balancer btc vault
-        // IVault.JoinPoolRequest request = IVault.JoinPoolRequest([wBtc], [10], );
-        // balancerBtcPool.joinPool(balancerBtcPoolId, reserveFactorV2, reserveFactorV2);
+        address[] memory poolAddresses = new address[](3);
+        poolAddresses[0] = wBtc;
+        poolAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
+        poolAddresses[2] = 0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6;
+
+        uint256[] memory maxAmountsIn = new uint256[](3);
+        maxAmountsIn[0] = ERC20(wBtc).balanceOf(address(this));
+        maxAmountsIn[1] = 0;
+        maxAmountsIn[2] = 0;
+
+        uint256 JoinKindSingleToken = 2;
+        uint256 bptAmountOut = 1; // what should this be?
+        uint256 enterTokenIndex = 0; // does this refer to poolAddresses index?
+        bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, bptAmountOut, enterTokenIndex);
+
+        IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
+            assets: poolAddresses,
+            maxAmountsIn: maxAmountsIn,
+            userData: userDataEncoded,
+            fromInternalBalance: false
+        });
+
+        balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
     }
 }

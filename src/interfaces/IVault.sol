@@ -48,7 +48,7 @@ interface IVault {
     ) external payable;
 
     struct JoinPoolRequest {
-        IAsset[] assets;
+        address[] assets;
         uint256[] maxAmountsIn;
         bytes userData;
         bool fromInternalBalance;
