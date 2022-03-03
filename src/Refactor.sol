@@ -38,6 +38,10 @@ contract Refactor {
     /// @dev LP token symbol is `staBAL3-BTC`
     bytes32 private constant balancerBtcPoolId = 0xfeadd389a5c427952d8fdb8057d6c8ba1156cc56000000000000000000000066;
 
+    /// @notice Balancer boosted pool id.
+    /// @dev LP token symbol is `bb-a-USD`
+    bytes32 private constant balancerBoostedPoolId = 0x7b50775383d3d6f0215a8f290f2c9e2eebbeceb20000000000000000000000fe;
+
     /// @notice AAVE V2 lending pool.
     ILendingPool private constant lendingPool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
 
@@ -92,6 +96,10 @@ contract Refactor {
         0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9
     ];
 
+    function joinBalancerPool(bytes32 _id, IVault.JoinPoolRequest memory _request) private {
+        balancerPool.joinPool(_id, address(this), reserveFactorV2, _request);
+    }
+
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {
         // Distribute V1 RF to V2 RF
@@ -99,10 +107,11 @@ contract Refactor {
         // address[] memory tokens = tokenAddresses;
         // reserveFactorV1.distribute(tokens);
 
-        // Approve this contract to move assets on v2's behalf
-        // TODO: Only get the balances required
+        // Transfer tokens to this contract
+        // TODO: Only get the balances required and add aTokens
         uint256 tokenLength = tokenAddresses.length;
         for (uint256 i = 0; i < tokenLength; i++) {
+            // TODO: only transfer exact amount needed
             collector.transfer(tokenAddresses[i], address(this), ERC20(tokenAddresses[i]).balanceOf(reserveFactorV2));
         }
 
@@ -112,7 +121,7 @@ contract Refactor {
         lendingPool.withdraw(usdc, aUsdc.balanceOf(address(this)), address(this));
         lendingPool.withdraw(usdt, aUsdt.balanceOf(address(this)), address(this));
 
-        // Redeem and Deposit wBTC in balancer btc vault
+        // Deposit wBTC in balancer btc vault
         address[] memory poolAddresses = new address[](3);
         poolAddresses[0] = wBtc;
         poolAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
@@ -124,8 +133,8 @@ contract Refactor {
         maxAmountsIn[2] = 0;
 
         uint256 JoinKindSingleToken = 2;
-        uint256 bptAmountOut = 1; // what should this be?
-        uint256 enterTokenIndex = 0; // does this refer to poolAddresses index?
+        uint256 bptAmountOut = 0;
+        uint256 enterTokenIndex = 0;
         bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, bptAmountOut, enterTokenIndex);
 
         IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
@@ -135,6 +144,30 @@ contract Refactor {
             fromInternalBalance: false
         });
 
-        balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
+        joinBalancerPool(balancerBtcPoolId, request);
+
+        // Deposit dai, usdc, usdt in balancer boosted vault
+        // address[] memory boostedAddresses = new address[](3);
+        // boostedAddresses[0] = wBtc;
+        // boostedAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
+        // boostedAddresses[2] = 0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6;
+
+        // uint256[] memory boostedIn = new uint256[](3);
+        // boostedIn[0] = ERC20(wBtc).balanceOf(address(this));
+        // boostedIn[1] = 0;
+        // boostedIn[2] = 0;
+
+        // uint256 JoinKindSingleToken = 2;
+        // uint256 bptAmountOut = 1; // what should this be?
+        // uint256 enterTokenIndex = 0; // does this refer to boostedAddresses index?
+        // bytes memory boostedUserData = abi.encode(JoinKindSingleToken, bptAmountOut, enterTokenIndex);
+
+        // IVault.JoinPoolRequest memory boostedRequest = IVault.JoinPoolRequest({
+        //     assets: boostedAddresses,
+        //     maxAmountsIn: boostedIn,
+        //     userData: boostedUserData,
+        //     fromInternalBalance: false
+        // });
+        // joinBalancerPool(balancerBoostedPoolId, boostedRequest);
     }
 }
