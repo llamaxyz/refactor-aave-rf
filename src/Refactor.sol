@@ -7,6 +7,7 @@ import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import "./interfaces/IAddressesProvider.sol";
 import "./interfaces/IReserveFactorV1.sol";
 import "./interfaces/IControllerV2Collector.sol";
+import "./test/utils/console.sol";
 
 /// @title Refactor AAVE Reserve Factor
 /// @author Austin Green
@@ -96,10 +97,6 @@ contract Refactor {
         0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9
     ];
 
-    function joinBalancerPool(bytes32 _id, IVault.JoinPoolRequest memory _request) private {
-        balancerPool.joinPool(_id, address(this), reserveFactorV2, _request);
-    }
-
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {
         // Distribute V1 RF to V2 RF
@@ -115,38 +112,38 @@ contract Refactor {
             collector.transfer(tokenAddresses[i], address(this), ERC20(tokenAddresses[i]).balanceOf(reserveFactorV2));
         }
 
-        // Redeem all aTokens for underlying ERC-20s
-        lendingPool.withdraw(wBtc, awBtc.balanceOf(address(this)), address(this));
-        lendingPool.withdraw(dai, aDai.balanceOf(address(this)), address(this));
-        lendingPool.withdraw(usdc, aUsdc.balanceOf(address(this)), address(this));
-        lendingPool.withdraw(usdt, aUsdt.balanceOf(address(this)), address(this));
+        // // Redeem all aTokens for underlying ERC-20s
+        // lendingPool.withdraw(wBtc, awBtc.balanceOf(address(this)), address(this));
+        // lendingPool.withdraw(dai, aDai.balanceOf(address(this)), address(this));
+        // lendingPool.withdraw(usdc, aUsdc.balanceOf(address(this)), address(this));
+        // lendingPool.withdraw(usdt, aUsdt.balanceOf(address(this)), address(this));
 
-        // Deposit wBTC in balancer btc vault
-        address[] memory poolAddresses = new address[](3);
-        poolAddresses[0] = wBtc;
-        poolAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
-        poolAddresses[2] = 0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6;
+        // // Deposit wBTC in balancer btc vault
+        // address[] memory poolAddresses = new address[](3);
+        // poolAddresses[0] = wBtc;
+        // poolAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
+        // poolAddresses[2] = 0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6;
 
-        uint256[] memory maxAmountsIn = new uint256[](3);
-        maxAmountsIn[0] = ERC20(wBtc).balanceOf(address(this));
-        maxAmountsIn[1] = 0;
-        maxAmountsIn[2] = 0;
+        // uint256[] memory maxAmountsIn = new uint256[](3);
+        // maxAmountsIn[0] = ERC20(wBtc).balanceOf(address(this));
+        // maxAmountsIn[1] = 0;
+        // maxAmountsIn[2] = 0;
 
-        uint256 JoinKindSingleToken = 2;
-        uint256 bptAmountOut = 0;
-        uint256 enterTokenIndex = 0;
-        bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, bptAmountOut, enterTokenIndex);
+        // uint256 JoinKindSingleToken = 2;
+        // uint256 bptAmountOut = 0;
+        // uint256 enterTokenIndex = 0;
+        // bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, bptAmountOut, enterTokenIndex);
 
-        IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
-            assets: poolAddresses,
-            maxAmountsIn: maxAmountsIn,
-            userData: userDataEncoded,
-            fromInternalBalance: false
-        });
+        // IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
+        //     assets: poolAddresses,
+        //     maxAmountsIn: maxAmountsIn,
+        //     userData: userDataEncoded,
+        //     fromInternalBalance: false
+        // });
 
-        joinBalancerPool(balancerBtcPoolId, request);
+        // balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
 
-        // Deposit dai, usdc, usdt in balancer boosted vault
+        // // Deposit dai, usdc, usdt in balancer boosted vault
         // address[] memory boostedAddresses = new address[](3);
         // boostedAddresses[0] = wBtc;
         // boostedAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
@@ -168,6 +165,6 @@ contract Refactor {
         //     userData: boostedUserData,
         //     fromInternalBalance: false
         // });
-        // joinBalancerPool(balancerBoostedPoolId, boostedRequest);
+        // balancerPool.joinPool(balancerBoostedPoolId, address(this), reserveFactorV2, boostedRequest);
     }
 }
