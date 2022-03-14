@@ -7,6 +7,12 @@ We will independently deploy the `Refactor` contract and propose an AIP that wil
 - Rename `.env.example` to `.env`. Add a valid URL for an Ethereum JSON-RPC client for the `FORK_URL` variable
 - Follow the [foundry installation instructions](https://github.com/gakonst/foundry#installation)
 
+```
+$ git clone https://github.com/llama-community/refactor-aave-rf.git
+$ cd refactor-aave-rf
+$ git submodule update --init --recursive
+```
+
 ## Tests
 
 ```
