@@ -3,6 +3,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 import {IVault} from "./interfaces/IVault.sol";
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
+import {ILendingPoolConfigurator} from "./interfaces/ILendingPoolConfigurator.sol";
 import "./interfaces/IAddressesProvider.sol";
 import "./interfaces/IReserveFactorV1.sol";
 import "./interfaces/IControllerV2Collector.sol";
@@ -46,6 +47,9 @@ contract ProposalPayload {
     /// @notice AAVE V2 lending pool.
     ILendingPool private constant lendingPool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
 
+    /// @notice AAVE V2 LendingPoolConfigurator
+    ILendingPoolConfigurator private constant configurator = ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
+
     /// @notice aWBTC token.
     IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
 
@@ -70,14 +74,16 @@ contract ProposalPayload {
     /// @notice usdt token.
     address private constant usdt = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
+    /// @notice dpi token
+    address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
+
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {
         // Transfer wBTC and aWBTC to this contract
-        collectorController.transfer(wBtc, address(this), wBtc.balanceOf(reserveFactorV2));
-        collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(reserveFactorV2));
+        // collectorController.transfer(wBtc, address(this), wBtc.balanceOf(reserveFactorV2));
+        // collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(reserveFactorV2));
 
-        // Redeem aWBTC for wBTC
-        lendingPool.withdraw(address(wBtc), aWBTC.balanceOf(address(this)), address(this));
+        // Redeem aWBTC for wBTC lendingPool.withdraw(address(wBtc), aWBTC.balanceOf(address(this)), address(this));
 
         // Deposit wBTC in balancer btc vault
         address[] memory poolAddresses = new address[](3);
@@ -103,6 +109,9 @@ contract ProposalPayload {
         });
 
         wBtc.approve(address(balancerPool), wBtc.balanceOf(address(this)));
-        balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
+        // balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
+
+        // enable DPI borrow
+        configurator.enableBorrowingOnReserve(dpi, false);
     }
 }
