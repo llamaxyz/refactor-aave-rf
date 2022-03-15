@@ -80,8 +80,8 @@ contract ProposalPayload {
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {
         // Transfer wBTC and aWBTC to this contract
-        // collectorController.transfer(wBtc, address(this), wBtc.balanceOf(reserveFactorV2));
-        // collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(reserveFactorV2));
+        collectorController.transfer(wBtc, address(this), wBtc.balanceOf(reserveFactorV2));
+        collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(reserveFactorV2));
 
         // Redeem aWBTC for wBTC lendingPool.withdraw(address(wBtc), aWBTC.balanceOf(address(this)), address(this));
 
@@ -109,7 +109,7 @@ contract ProposalPayload {
         });
 
         wBtc.approve(address(balancerPool), wBtc.balanceOf(address(this)));
-        // balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
+        balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
 
         // enable DPI borrow
         configurator.enableBorrowingOnReserve(dpi, false);
