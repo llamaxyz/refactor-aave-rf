@@ -101,7 +101,7 @@ contract ProposalPayload {
             userData: userDataEncoded,
             fromInternalBalance: false
         });
-
+        console.log(msg.sender);
         wBtc.approve(address(balancerPool), wBtc.balanceOf(address(this)));
         balancerPool.joinPool(balancerBtcPoolId, address(this), reserveFactorV2, request);
     }
