@@ -2,6 +2,8 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./interfaces/IReserveFactorV1.sol";
+import "./interfaces/IControllerV2Collector.sol";
+import "./interfaces/IAddressesProvider.sol";
 
 /// @title Payload to refactor AAVE Reserve Factor
 /// @author Austin Green
@@ -29,15 +31,51 @@ contract ProposalPayload {
     /// @notice AAVE's V2 Reserve Factor.
     address private constant reserveFactorV2 = 0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c;
 
+    /// @notice Provides the logic for the V2 address to set ERC20 approvals.
+    /// @notice Approvals only be initiated by AAVE's governance executor.
+    IControllerV2Collector private constant collectorController =
+        IControllerV2Collector(0x7AB1e5c406F36FE20Ce7eBa528E182903CA8bFC7);
+
+    /// @notice Provides address mapping for AAVE.
+    IAddressesProvider private constant addressProvider =
+        IAddressesProvider(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
+
     /// @notice Token distributor implementation contract.
     address private immutable tokenDistributorImpl;
 
-    constructor(address _tokenDistributorImpl) {
+    /// @notice Ecosystem Reserve implementation contract.
+    address private immutable ecosystemReserveImpl;
+
+    // Just including this for testing purposes, we'll have the address of the new impl before deploying
+    constructor(address _tokenDistributorImpl, address _ecosystemReserveImpl) {
         tokenDistributorImpl = _tokenDistributorImpl;
+        ecosystemReserveImpl = _ecosystemReserveImpl;
     }
 
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {
+        // Upgrade to new implementation contract and direct all funds to v2
+        address[] memory receivers = new address[](1);
+        receivers[0] = reserveFactorV2;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100_00;
+
+        reserveFactorV1.upgradeToAndCall(
+            tokenDistributorImpl,
+            abi.encodeWithSignature("initialize(address[],uint256[])", receivers, amounts)
+        );
+
+        // Upgrade to new implementation contract that has ability to transfer ETH
+        reserveFactorV2.upgradeToAndCall(
+            ecosystemReserveImpl,
+            abi.encodeWithSignature("initialize(address)", address(collectorController))
+        );
+
+        // Set token distributor for AAVE v1 to V2 RF
+        addressProvider.setTokenDistributor(address(reserveFactorV2));
+
+        // Distribute all tokens with meaningful balances to v2
         address[] memory tokenAddresses = new address[](12);
         tokenAddresses[0] = wBtc;
         tokenAddresses[1] = dai;
@@ -51,18 +89,6 @@ contract ProposalPayload {
         tokenAddresses[9] = 0x514910771AF9Ca656af840dff83E8264EcF986CA; // LINK
         tokenAddresses[10] = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // UNI
         tokenAddresses[11] = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // AAVE
-
-        address[] memory receivers = new address[](1);
-        receivers[0] = reserveFactorV2;
-
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 100_00;
-
-        reserveFactorV1.upgradeToAndCall(
-            tokenDistributorImpl,
-            abi.encodeWithSignature("initialize(address[],uint256[])", receivers, amounts)
-        );
-
         reserveFactorV1.distribute(tokenAddresses);
     }
 }
