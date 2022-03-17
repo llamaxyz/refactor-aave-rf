@@ -131,7 +131,7 @@ contract AaveEcosystemReserve is VersionedInitializable {
 
     address internal _fundsAdmin;
 
-    uint256 public constant REVISION = 3;
+    uint256 public constant REVISION = 2;
 
     function getRevision() internal pure override returns (uint256) {
         return REVISION;
@@ -165,12 +165,6 @@ contract AaveEcosystemReserve is VersionedInitializable {
     ) external onlyFundsAdmin {
         token.transfer(recipient, amount);
     }
-
-    function transferEth(address recipient, uint256 amount) external onlyFundsAdmin {
-        recipient.call{value: amount}("");
-    }
-
-    receive() external payable {}
 
     function setFundsAdmin(address admin) public onlyFundsAdmin {
         _setFundsAdmin(admin);
