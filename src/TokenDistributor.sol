@@ -788,7 +788,7 @@ contract TokenDistributor is ReentrancyGuard, VersionedInitializable {
     event DistributionUpdated(address[] receivers, uint256[] percentages);
     event Distributed(address receiver, uint256 percentage, uint256 amount);
 
-    uint256 public constant IMPLEMENTATION_REVISION = 0x6;
+    uint256 public constant IMPLEMENTATION_REVISION = 0x5;
 
     /// @notice DEPRECATED
     uint256 public constant MAX_UINT = 2**256 - 1;
@@ -898,12 +898,8 @@ contract TokenDistributor is ReentrancyGuard, VersionedInitializable {
                 _token.safeTransfer(_distribution.receivers[j], _amount);
             } else {
                 //solium-disable-next-line
-                IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-                (bool _success, ) = _distribution.receivers[j].call.value(_amount)(
-                    abi.encodeWithSignature("deposit()")
-                );
+                (bool _success, ) = _distribution.receivers[j].call.value(_amount)("");
                 require(_success, "Reverted ETH transfer");
-                weth.safeTransfer(_distribution.receivers[j], _amount);
             }
             emit Distributed(_distribution.receivers[j], _distribution.percentages[j], _amount);
         }
