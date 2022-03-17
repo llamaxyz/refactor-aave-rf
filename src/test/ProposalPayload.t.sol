@@ -13,6 +13,7 @@ import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
 
 import "../ProposalPayload.sol";
+import "../TokenDistributor.sol";
 
 interface Vm {
     // Set block.timestamp (newTimestamp)
@@ -51,6 +52,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address[] private aaveWhales;
 
     address private proposalPayloadAddress;
+    address private tokenDistributorAddress;
 
     address[] private targets;
     uint256[] private values;
@@ -86,22 +88,12 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     }
 
     function testProposalExecution() public {
-        // get initial state for testing
-        uint256 wBTCcollectorBalanceBefore = wBtc.balanceOf(reserveFactorV2);
-        uint256 wBTCbalanceOfExecutor = wBtc.balanceOf(aaveGovernanceShortExecutor);
-
-        uint256 aWBTCcollectorBalanceBefore = aWBTC.balanceOf(reserveFactorV2);
-        uint256 aWBTCbalanceOfExecutor = aWBTC.balanceOf(aaveGovernanceShortExecutor);
-
         // execute proposal
         aaveGovernanceV2.execute(proposalId);
 
         // confirm state after
         IAaveGovernanceV2.ProposalState state = aaveGovernanceV2.getProposalState(proposalId);
         assertEq(uint256(state), uint256(IAaveGovernanceV2.ProposalState.Executed), "PROPOSAL_NOT_IN_EXPECTED_STATE");
-
-        // assertEq(wBtc.balanceOf(aaveGovernanceShortExecutor), wBTCcollectorBalanceBefore + wBTCbalanceOfExecutor);
-        // assertEq(aWBTC.balanceOf(aaveGovernanceShortExecutor), aWBTCcollectorBalanceBefore + aWBTCbalanceOfExecutor);
     }
 
     /*******************************************************************************/
@@ -109,7 +101,11 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     /*******************************************************************************/
 
     function _createProposal() public {
-        ProposalPayload proposalPayload = new ProposalPayload();
+        // Deploy TokenDistributor implementation contract
+        TokenDistributor tokenDistributor = new TokenDistributor();
+        tokenDistributorAddress = address(tokenDistributor);
+
+        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress);
         proposalPayloadAddress = address(proposalPayload);
 
         bytes memory emptyBytes;

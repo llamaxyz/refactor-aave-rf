@@ -1,14 +1,7 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-11-16
- */
+// SPDX-License-Identifier: agpl-3.0
+pragma solidity >=0.4.22 <0.6.0;
 
-/**
- *Submitted for verification at Etherscan.io on 2020-08-06
- */
-
-// File: openzeppelin-solidity/contracts/math/SafeMath.sol
-
-pragma solidity ^0.5.0;
+import "./interfaces/IERC20.sol";
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -117,9 +110,6 @@ library SafeMath {
 }
 
 // File: openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
-
-pragma solidity ^0.5.0;
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
  * the optional functions; to access them see `ERC20Detailed`.
@@ -200,9 +190,6 @@ interface IERC20 {
 }
 
 // File: openzeppelin-solidity/contracts/utils/Address.sol
-
-pragma solidity ^0.5.0;
-
 /**
  * @dev Collection of functions related to the address type,
  */
@@ -232,9 +219,6 @@ library Address {
 }
 
 // File: openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol
-
-pragma solidity ^0.5.0;
-
 /**
  * @title SafeERC20
  * @dev Wrappers around ERC20 operations that throw on failure (when the token
@@ -329,9 +313,6 @@ library SafeERC20 {
 }
 
 // File: openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
-
-pragma solidity ^0.5.0;
-
 /**
  * @dev Implementation of the `IERC20` interface.
  *
@@ -569,9 +550,6 @@ contract ERC20 is IERC20 {
 }
 
 // File: openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol
-
-pragma solidity ^0.5.0;
-
 /**
  * @dev Extension of `ERC20` that allows token holders to destroy both their own
  * tokens and those that they have an allowance for, in a way that can be
@@ -596,9 +574,6 @@ contract ERC20Burnable is ERC20 {
 }
 
 // File: openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol
-
-pragma solidity ^0.5.0;
-
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
  *
@@ -637,9 +612,6 @@ contract ReentrancyGuard {
 }
 
 // File: contracts/libraries/openzeppelin-upgradeability/VersionedInitializable.sol
-
-pragma solidity >=0.4.24 <0.6.0;
-
 /**
  * @title VersionedInitializable
  *
@@ -712,9 +684,6 @@ contract VersionedInitializable {
 }
 
 // File: contracts/interfaces/IKyberNetworkProxyInterface.sol
-
-pragma solidity ^0.5.0;
-
 interface IKyberNetworkProxyInterface {
     function maxGasPrice() external view returns (uint256);
 
@@ -745,9 +714,6 @@ interface IKyberNetworkProxyInterface {
 }
 
 // File: contracts/libraries/EthAddressLib.sol
-
-pragma solidity ^0.5.0;
-
 library EthAddressLib {
     /**
      * @dev returns the address used within the protocol to identify ETH
@@ -759,9 +725,6 @@ library EthAddressLib {
 }
 
 // File: contracts/libraries/UintConstants.sol
-
-pragma solidity ^0.5.0;
-
 library UintConstants {
     /**
      * @dev returns max uint256
@@ -781,9 +744,6 @@ library UintConstants {
 }
 
 // File: contracts/interfaces/IExchangeAdapter.sol
-
-pragma solidity ^0.5.0;
-
 contract IExchangeAdapter {
     using SafeERC20 for IERC20;
 
@@ -806,9 +766,6 @@ contract IExchangeAdapter {
 }
 
 // File: contracts/fees/TokenDistributor.sol
-
-pragma solidity ^0.5.0;
-
 /// @title TokenDistributor
 /// @author Aave
 /// @notice Receives tokens and manages the distribution amongst receivers
@@ -928,20 +885,27 @@ contract TokenDistributor is ReentrancyGuard, VersionedInitializable {
     /// @param _amountToDistribute The specific amount to distribute
     function internalDistributeTokenWithAmount(IERC20 _token, uint256 _amountToDistribute) internal {
         address _tokenAddress = address(_token);
-        IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
         Distribution memory _distribution = distribution;
-        //avoid transfers/burns of 0 tokens
-        if (_amountToDistribute > 0) {
+        for (uint256 j = 0; j < _distribution.receivers.length; j++) {
+            uint256 _amount = _amountToDistribute.mul(_distribution.percentages[j]).div(DISTRIBUTION_BASE);
+
+            //avoid transfers/burns of 0 tokens
+            if (_amount == 0) {
+                continue;
+            }
+
             if (_tokenAddress != EthAddressLib.ethAddress()) {
-                _token.safeTransfer(_distribution.receivers[0], _amountToDistribute);
+                _token.safeTransfer(_distribution.receivers[j], _amount);
             } else {
-                (bool _success, ) = _distribution.receivers[0].call.value(_amountToDistribute)(
+                //solium-disable-next-line
+                IERC20 weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+                (bool _success, ) = _distribution.receivers[j].call.value(_amount)(
                     abi.encodeWithSignature("deposit()")
                 );
                 require(_success, "Reverted ETH transfer");
-                weth.safeTransfer(_distribution.receivers[0], _amountToDistribute);
+                weth.safeTransfer(_distribution.receivers[j], _amount);
             }
-            emit Distributed(_distribution.receivers[0], 10000, _amountToDistribute);
+            emit Distributed(_distribution.receivers[j], _distribution.percentages[j], _amount);
         }
     }
 
