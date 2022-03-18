@@ -2,6 +2,7 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./interfaces/IReserveFactorV1.sol";
+import "./interfaces/IEcosystemReserve.sol";
 import "./interfaces/IControllerV2Collector.sol";
 import "./interfaces/IAddressesProvider.sol";
 
@@ -29,7 +30,7 @@ contract ProposalPayload {
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
 
     /// @notice AAVE's V2 Reserve Factor.
-    address private constant reserveFactorV2 = 0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c;
+    IEcosystemReserve private constant reserveFactorV2 = IEcosystemReserve(0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c);
 
     /// @notice Provides the logic for the V2 address to set ERC20 approvals.
     /// @notice Approvals only be initiated by AAVE's governance executor.
@@ -56,7 +57,7 @@ contract ProposalPayload {
     function execute() external {
         // Upgrade to new implementation contract and direct all funds to v2
         address[] memory receivers = new address[](1);
-        receivers[0] = reserveFactorV2;
+        receivers[0] = address(reserveFactorV2);
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100_00;

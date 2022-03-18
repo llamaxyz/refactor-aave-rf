@@ -8,34 +8,11 @@ import "forge-std/console.sol";
 import {stdCheats} from "forge-std/stdlib.sol";
 
 // contract dependencies
+import "./interfaces/Vm.sol";
 import "../interfaces/IAaveGovernanceV2.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
-
 import "../ProposalPayload.sol";
-import "../TokenDistributor.sol";
-
-interface Vm {
-    // Set block.timestamp (newTimestamp)
-    function warp(uint256) external;
-
-    function roll(uint256) external;
-
-    function expectEmit(
-        bool,
-        bool,
-        bool,
-        bool
-    ) external;
-
-    function prank(address) external;
-
-    function expectRevert(bytes calldata) external;
-
-    function startPrank(address) external;
-
-    function stopPrank() external;
-}
 
 contract ProposalPayloadTest is DSTest, stdCheats {
     Vm vm = Vm(HEVM_ADDRESS);
@@ -53,6 +30,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     address private proposalPayloadAddress;
     address private tokenDistributorAddress;
+    address private ecosystemReserveAddress;
 
     address[] private targets;
     uint256[] private values;
@@ -102,10 +80,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     function _createProposal() public {
         // Deploy TokenDistributor implementation contract
-        TokenDistributor tokenDistributor = new TokenDistributor();
-        tokenDistributorAddress = address(tokenDistributor);
+        tokenDistributorAddress = deployCode("TokenDistributor.sol:TokenDistributor");
+        ecosystemReserveAddress = deployCode("AaveEcosystemReserve.sol:AaveEcosystemReserve");
 
-        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress);
+        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress, ecosystemReserveAddress);
         proposalPayloadAddress = address(proposalPayload);
 
         bytes memory emptyBytes;
