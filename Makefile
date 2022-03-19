@@ -7,7 +7,7 @@ update   :; forge update
 
 # Build & test
 build    :; forge build
-test     :; forge test --fork-url ${FORK_URL} --fork-block-number ${BLOCK_NUMBER} -vvv
+test     :; forge test --fork-url ${FORK_URL} --fork-block-number ${BLOCK_NUMBER}
 report   :; forge test --fork-url ${FORK_URL} --fork-block-number ${BLOCK_NUMBER} --gas-report  | cat > .gas-report
 match    :; forge test --fork-url ${FORK_URL} --fork-block-number ${BLOCK_NUMBER} -m ${MATCH} -vvv
 trace    :; forge test --fork-url ${FORK_URL} --fork-block-number ${BLOCK_NUMBER} -vvvvv
