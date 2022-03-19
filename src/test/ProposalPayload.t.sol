@@ -8,33 +8,11 @@ import "forge-std/console.sol";
 import {stdCheats} from "forge-std/stdlib.sol";
 
 // contract dependencies
+import "./interfaces/Vm.sol";
 import "../interfaces/IAaveGovernanceV2.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
-
 import "../ProposalPayload.sol";
-
-interface Vm {
-    // Set block.timestamp (newTimestamp)
-    function warp(uint256) external;
-
-    function roll(uint256) external;
-
-    function expectEmit(
-        bool,
-        bool,
-        bool,
-        bool
-    ) external;
-
-    function prank(address) external;
-
-    function expectRevert(bytes calldata) external;
-
-    function startPrank(address) external;
-
-    function stopPrank() external;
-}
 
 contract ProposalPayloadTest is DSTest, stdCheats {
     Vm vm = Vm(HEVM_ADDRESS);
@@ -51,6 +29,8 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address[] private aaveWhales;
 
     address private proposalPayloadAddress;
+    address private tokenDistributorAddress;
+    address private ecosystemReserveAddress;
 
     address[] private targets;
     uint256[] private values;
@@ -86,22 +66,12 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     }
 
     function testProposalExecution() public {
-        // get initial state for testing
-        uint256 wBTCcollectorBalanceBefore = wBtc.balanceOf(reserveFactorV2);
-        uint256 wBTCbalanceOfExecutor = wBtc.balanceOf(aaveGovernanceShortExecutor);
-
-        uint256 aWBTCcollectorBalanceBefore = aWBTC.balanceOf(reserveFactorV2);
-        uint256 aWBTCbalanceOfExecutor = aWBTC.balanceOf(aaveGovernanceShortExecutor);
-
         // execute proposal
         aaveGovernanceV2.execute(proposalId);
 
         // confirm state after
         IAaveGovernanceV2.ProposalState state = aaveGovernanceV2.getProposalState(proposalId);
         assertEq(uint256(state), uint256(IAaveGovernanceV2.ProposalState.Executed), "PROPOSAL_NOT_IN_EXPECTED_STATE");
-
-        // assertEq(wBtc.balanceOf(aaveGovernanceShortExecutor), wBTCcollectorBalanceBefore + wBTCbalanceOfExecutor);
-        // assertEq(aWBTC.balanceOf(aaveGovernanceShortExecutor), aWBTCcollectorBalanceBefore + aWBTCbalanceOfExecutor);
     }
 
     /*******************************************************************************/
@@ -109,7 +79,11 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     /*******************************************************************************/
 
     function _createProposal() public {
-        ProposalPayload proposalPayload = new ProposalPayload();
+        // Deploy TokenDistributor implementation contract
+        tokenDistributorAddress = deployCode("TokenDistributor.sol:TokenDistributor");
+        ecosystemReserveAddress = deployCode("AaveEcosystemReserve.sol:AaveEcosystemReserve");
+
+        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress, ecosystemReserveAddress);
         proposalPayloadAddress = address(proposalPayload);
 
         bytes memory emptyBytes;
@@ -119,6 +93,12 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         signatures.push("execute()");
         calldatas.push(emptyBytes);
         withDelegatecalls.push(true);
+
+        targets.push(proposalPayloadAddress);
+        values.push(0);
+        signatures.push("executeWithoutDelegate()");
+        calldatas.push(emptyBytes);
+        withDelegatecalls.push(false);
 
         vm.prank(aaveWhales[0]);
         aaveGovernanceV2.create(shortExecutor, targets, values, signatures, calldatas, withDelegatecalls, ipfsHash);
