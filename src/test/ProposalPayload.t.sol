@@ -12,6 +12,8 @@ import "./interfaces/Vm.sol";
 import "../interfaces/IAaveGovernanceV2.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
+import "../interfaces/IProtocolDataProvider.sol";
+
 import "../ProposalPayload.sol";
 
 contract ProposalPayloadTest is DSTest, stdCheats {
@@ -45,6 +47,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
     address private constant reserveFactorV2 = 0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c;
 
+    IProtocolDataProvider private constant dataProvider =
+        IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
+    address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
+
     function setUp() public {
         // aave whales may need to be updated based on the block being used
         // these are sometimes exchange accounts or whale who move their funds
@@ -72,6 +78,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         // confirm state after
         IAaveGovernanceV2.ProposalState state = aaveGovernanceV2.getProposalState(proposalId);
         assertEq(uint256(state), uint256(IAaveGovernanceV2.ProposalState.Executed), "PROPOSAL_NOT_IN_EXPECTED_STATE");
+
+        (, , , , , , bool borrowEnabled, bool stableBorrowEnabled, , ) = dataProvider.getReserveConfigurationData(dpi);
+        assertTrue(borrowEnabled, "DPI_BORROW_NOT_ENABLED");
+        assertTrue(!stableBorrowEnabled, "DPI_STABLE_BORROW_ENABLED");
     }
 
     /*******************************************************************************/

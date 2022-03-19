@@ -5,6 +5,7 @@ import "./interfaces/IReserveFactorV1.sol";
 import "./interfaces/IEcosystemReserve.sol";
 import "./interfaces/IControllerV2Collector.sol";
 import "./interfaces/IAddressesProvider.sol";
+import {ILendingPoolConfigurator} from "./interfaces/ILendingPoolConfigurator.sol";
 
 /// @title Payload to refactor AAVE Reserve Factor
 /// @author Austin Green
@@ -47,6 +48,13 @@ contract ProposalPayload {
     /// @notice Ecosystem Reserve implementation contract.
     address private immutable ecosystemReserveImpl;
 
+    /// @notice DPI token address.
+    address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
+
+    /// @notice AAVE V2 LendingPoolConfigurator
+    ILendingPoolConfigurator private constant configurator =
+        ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
+
     // Just including this for testing purposes, we'll have the address of the new impl before deploying
     constructor(address _tokenDistributorImpl, address _ecosystemReserveImpl) {
         tokenDistributorImpl = _tokenDistributorImpl;
@@ -75,6 +83,9 @@ contract ProposalPayload {
 
         // Set token distributor for AAVE v1 to V2 RF
         addressProvider.setTokenDistributor(address(reserveFactorV2));
+
+        // enable DPI borrow
+        configurator.enableBorrowingOnReserve(dpi, false);
     }
 
     function executeWithoutDelegate() external {
