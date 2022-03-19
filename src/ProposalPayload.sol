@@ -75,7 +75,9 @@ contract ProposalPayload {
 
         // Set token distributor for AAVE v1 to V2 RF
         addressProvider.setTokenDistributor(address(reserveFactorV2));
+    }
 
+    function executeWithoutDelegate() external {
         // Distribute all tokens with meaningful balances to v2
         address[] memory tokenAddresses = new address[](12);
         tokenAddresses[0] = wBtc;

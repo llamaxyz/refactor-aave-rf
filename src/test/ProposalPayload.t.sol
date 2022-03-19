@@ -94,6 +94,12 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         calldatas.push(emptyBytes);
         withDelegatecalls.push(true);
 
+        targets.push(proposalPayloadAddress);
+        values.push(0);
+        signatures.push("executeWithoutDelegate()");
+        calldatas.push(emptyBytes);
+        withDelegatecalls.push(false);
+
         vm.prank(aaveWhales[0]);
         aaveGovernanceV2.create(shortExecutor, targets, values, signatures, calldatas, withDelegatecalls, ipfsHash);
         proposalId = aaveGovernanceV2.getProposalsCount() - 1;
