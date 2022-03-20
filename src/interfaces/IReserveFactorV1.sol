@@ -5,4 +5,6 @@ interface IReserveFactorV1 {
     function distribute(address[] memory) external;
 
     function upgradeToAndCall(address, bytes calldata) external payable;
+
+    function getDistribution() external view returns (address[] memory, uint256[] memory);
 }

@@ -90,7 +90,7 @@ contract ProposalPayload {
 
     function executeWithoutDelegate() external {
         // Distribute all tokens with meaningful balances to v2
-        address[] memory tokenAddresses = new address[](12);
+        address[] memory tokenAddresses = new address[](13);
         tokenAddresses[0] = wBtc;
         tokenAddresses[1] = dai;
         tokenAddresses[2] = usdc;
@@ -103,6 +103,8 @@ contract ProposalPayload {
         tokenAddresses[9] = 0x514910771AF9Ca656af840dff83E8264EcF986CA; // LINK
         tokenAddresses[10] = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // UNI
         tokenAddresses[11] = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // AAVE
+        tokenAddresses[11] = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // AAVE
+        tokenAddresses[12] = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // ETH
         reserveFactorV1.distribute(tokenAddresses);
     }
 }
