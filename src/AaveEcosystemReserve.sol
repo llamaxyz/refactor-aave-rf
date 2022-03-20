@@ -120,6 +120,16 @@ abstract contract VersionedInitializable {
     uint256[50] private ______gap;
 }
 
+library EthAddressLib {
+    /**
+     * @dev returns the address used within the protocol to identify ETH
+     * @return the address assigned to ETH
+     */
+    function ethAddress() internal pure returns (address) {
+        return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    }
+}
+
 /**
  * @title AaveEcosystemReserve
  * @notice Stores all the AAVE kept for incentives, just giving approval to the different
@@ -163,11 +173,12 @@ contract AaveEcosystemReserve is VersionedInitializable {
         address recipient,
         uint256 amount
     ) external onlyFundsAdmin {
-        token.transfer(recipient, amount);
-    }
-
-    function transferEth(address recipient, uint256 amount) external onlyFundsAdmin {
-        recipient.call{value: amount}("");
+        if (address(token) == EthAddressLib.ethAddress()) {
+            (bool success, ) = recipient.call{value: amount}("");
+            require(success, "Reverted ETH transfer");
+        } else {
+            token.transfer(recipient, amount);
+        }
     }
 
     receive() external payable {}

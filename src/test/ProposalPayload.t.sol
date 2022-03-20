@@ -10,6 +10,7 @@ import {stdCheats} from "forge-std/stdlib.sol";
 // contract dependencies
 import "./interfaces/Vm.sol";
 import "../interfaces/IAaveGovernanceV2.sol";
+import "../interfaces/IEcosystemReserve.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IProtocolDataProvider.sol";
@@ -47,10 +48,18 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
     address private constant reserveFactorV2 = 0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c;
     address private constant emergencyReserve = 0x2fbB0c60a41cB7Ea5323071624dCEAD3d213D0Fa;
+    IAddressesProvider private constant addressProvider =
+        IAddressesProvider(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
+    IControllerV2Collector private constant collectorController =
+        IControllerV2Collector(0x7AB1e5c406F36FE20Ce7eBa528E182903CA8bFC7);
 
     IProtocolDataProvider private constant dataProvider =
         IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
+
+    address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    uint256 private constant originalV1EthBalance = 104432825860028928474;
 
     IERC20[] private tokens = [
         IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
@@ -112,12 +121,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         assertEq(percentages[0], 80_00);
         assertEq(percentages[1], 20_00);
 
-        // execute proposal
-        aaveGovernanceV2.execute(proposalId);
-
-        // confirm state after
-        IAaveGovernanceV2.ProposalState state = aaveGovernanceV2.getProposalState(proposalId);
-        assertEq(uint256(state), uint256(IAaveGovernanceV2.ProposalState.Executed), "PROPOSAL_NOT_IN_EXPECTED_STATE");
+        _executeProposal();
 
         // confirm distributions were updated
         (address[] memory newReceivers, uint256[] memory newPercentages) = reserveFactorV1.getDistribution();
@@ -132,9 +136,9 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         uint256[] memory v2OriginalBalances = new uint256[](12);
 
         for (uint256 i; i < tokens.length; i++) {
-            v2OriginalBalances[i] = tokens[i].balanceOf(address(reserveFactorV2));
+            v2OriginalBalances[i] = tokens[i].balanceOf(reserveFactorV2);
         }
-        uint256 v2EthBalance = address(reserveFactorV2).balance;
+        uint256 v2EthBalance = reserveFactorV2.balance;
 
         // check pre-execution state
         for (uint256 i; i < tokens.length; i++) {
@@ -142,14 +146,9 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         }
 
         uint256 v1EthBalance = address(reserveFactorV1).balance;
-        assertEq(v1EthBalance, 104432825860028928474);
+        assertEq(v1EthBalance, originalV1EthBalance);
 
-        // execute proposal
-        aaveGovernanceV2.execute(proposalId);
-
-        // confirm state after
-        IAaveGovernanceV2.ProposalState state = aaveGovernanceV2.getProposalState(proposalId);
-        assertEq(uint256(state), uint256(IAaveGovernanceV2.ProposalState.Executed), "PROPOSAL_NOT_IN_EXPECTED_STATE");
+        _executeProposal();
 
         // check that v1 is empty and v2 has all funds
         for (uint256 i; i < tokens.length; i++) {
@@ -159,23 +158,59 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         assertEq(v1EthNewBalance, 0);
 
         for (uint256 i; i < tokens.length; i++) {
-            assertEq(tokens[i].balanceOf(address(reserveFactorV2)), v2OriginalBalances[i] + balances[i]);
+            assertEq(tokens[i].balanceOf(reserveFactorV2), v2OriginalBalances[i] + balances[i]);
         }
-        assertEq(address(reserveFactorV2).balance, v1EthBalance + v2EthBalance);
+        assertEq(reserveFactorV2.balance, v1EthBalance + v2EthBalance);
+    }
+
+    function testDistributorUpdated() public {
+        // confirm token distributor is v1 reserve
+        assertEq(addressProvider.getTokenDistributor(), address(reserveFactorV1));
+
+        _executeProposal();
+
+        // check token distributor was updated to v2 reserve
+        assertEq(addressProvider.getTokenDistributor(), reserveFactorV2);
+    }
+
+    function testEcosystemReserveETH() public {
+        // confirm ecosystem reserve can't receive eth
+        uint256 v1EthBalance = address(reserveFactorV1).balance;
+        (bool success1, ) = reserveFactorV2.call{value: 100 ether}("");
+        assertTrue(!success1, "RECEIVED_ETHER");
+
+        _executeProposal();
+
+        // check ecosystem reserve can receive eth after proposal
+        (bool success2, ) = reserveFactorV2.call{value: 100 ether}("");
+        assertTrue(success2, "DID_NOT_RECEIVED_ETHER");
+
+        // check ecosystem reserve can transfer eth after proposal
+        IEcosystemReserve updatedV2Rf = IEcosystemReserve(reserveFactorV2);
+        address randomAddr = 0x00Be3826e98a5e26C022811001e740Ca00e2D01f;
+
+        vm.prank(address(collectorController));
+        updatedV2Rf.transfer(ethAddress, randomAddr, 50 ether);
+        assertEq(randomAddr.balance, 50 ether);
+        assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
     }
 
     function testDpiBorrowing() public {
+        _executeProposal();
+
+        // confirm borrow enabled but stable disabled
+        (, , , , , , bool borrowEnabled, bool stableBorrowEnabled, , ) = dataProvider.getReserveConfigurationData(dpi);
+        assertTrue(borrowEnabled, "DPI_BORROW_NOT_ENABLED");
+        assertTrue(!stableBorrowEnabled, "DPI_STABLE_BORROW_ENABLED");
+    }
+
+    function _executeProposal() public {
         // execute proposal
         aaveGovernanceV2.execute(proposalId);
 
         // confirm state after
         IAaveGovernanceV2.ProposalState state = aaveGovernanceV2.getProposalState(proposalId);
         assertEq(uint256(state), uint256(IAaveGovernanceV2.ProposalState.Executed), "PROPOSAL_NOT_IN_EXPECTED_STATE");
-
-        // confirm borrow enabled but stable disabled
-        (, , , , , , bool borrowEnabled, bool stableBorrowEnabled, , ) = dataProvider.getReserveConfigurationData(dpi);
-        assertTrue(borrowEnabled, "DPI_BORROW_NOT_ENABLED");
-        assertTrue(!stableBorrowEnabled, "DPI_STABLE_BORROW_ENABLED");
     }
 
     /*******************************************************************************/
