@@ -158,7 +158,12 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         assertEq(v1EthNewBalance, 0);
 
         for (uint256 i; i < tokens.length; i++) {
-            assertEq(tokens[i].balanceOf(reserveFactorV2), v2OriginalBalances[i] + balances[i]);
+            if (i == 0) {
+                // wbtc should be empty because of balancer pool deposit
+                assertEq(tokens[i].balanceOf(reserveFactorV2), 0);
+            } else {
+                assertEq(tokens[i].balanceOf(reserveFactorV2), v2OriginalBalances[i] + balances[i]);
+            }
         }
         assertEq(reserveFactorV2.balance, v1EthBalance + v2EthBalance);
     }
@@ -235,9 +240,15 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
         targets.push(proposalPayloadAddress);
         values.push(0);
-        signatures.push("executeWithoutDelegate()");
+        signatures.push("distributeTokens()");
         calldatas.push(emptyBytes);
         withDelegatecalls.push(false);
+
+        targets.push(proposalPayloadAddress);
+        values.push(0);
+        signatures.push("joinBalancerPool()");
+        calldatas.push(emptyBytes);
+        withDelegatecalls.push(true);
 
         vm.prank(aaveWhales[0]);
         aaveGovernanceV2.create(shortExecutor, targets, values, signatures, calldatas, withDelegatecalls, ipfsHash);
