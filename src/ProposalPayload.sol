@@ -129,7 +129,7 @@ contract ProposalPayload {
         collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(address(reserveFactorV2)));
 
         // Redeem aWBTC for wBTC
-        lendingPool.withdraw(address(wBtc), aWBTC.balanceOf(address(this)), address(this));
+        lendingPool.withdraw(wBtc, aWBTC.balanceOf(address(this)), address(this));
 
         // Deposit wBTC in balancer btc vault
         address[] memory poolAddresses = new address[](3);

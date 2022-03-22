@@ -4,10 +4,11 @@ We will independently deploy the `ProposalPayload` contract and propose an AIP t
 
 ## Setup
 
-- Rename `.env.example` to `.env`. Add a valid URL for an Ethereum JSON-RPC client for the `FORK_URL` variable
 - Follow the [foundry installation instructions](https://github.com/gakonst/foundry#installation)
 
 ```
+$ echo 'export ALCHEMY_URL=https://eth-mainnet.alchemyapi.io/v2/<API_KEY>' >> ~/.zshrc
+$ source ~/.zshrc
 $ git clone https://github.com/llama-community/refactor-aave-rf.git
 $ cd refactor-aave-rf
 $ git submodule update --init --recursive
