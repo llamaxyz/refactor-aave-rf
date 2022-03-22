@@ -58,6 +58,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
+    IERC20 private constant staBal = IERC20(0xFeadd389a5c427952D8fdb8057D6C8ba1156cC56);
     IERC20 private constant wBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     uint256 private constant originalV1EthBalance = 104432825860028928474;
     uint256 private constant originalAwBtcBalance = 243909866;
@@ -206,14 +207,17 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         // confirm pre-proposal aWBTC and wBTC balance
         uint256 awBtcBalance = aWBTC.balanceOf(reserveFactorV2);
         uint256 wBtcBalance = wBTC.balanceOf(reserveFactorV2);
+        uint256 staBalBalance = staBal.balanceOf(reserveFactorV2);
         assertEq(awBtcBalance, originalAwBtcBalance);
         assertEq(wBtcBalance, originalWBtcBalance);
+        assertEq(staBalBalance, 0);
 
         _executeProposal();
 
         // check that all awBtc was redeemed and max allocated to balancer pool
         assertEq(aWBTC.balanceOf(reserveFactorV2), 139770);
         assertEq(wBTC.balanceOf(reserveFactorV2), 0);
+        assertEq(staBal.balanceOf(reserveFactorV2), 0);
     }
 
     function testDpiBorrowing() public {
