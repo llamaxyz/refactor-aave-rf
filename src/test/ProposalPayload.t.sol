@@ -214,8 +214,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
         _executeProposal();
 
+        uint256 expectedMintToTreasury = 139770;
+
         // check that all awBtc was redeemed and max allocated to balancer pool
-        assertEq(aWBTC.balanceOf(reserveFactorV2), 139770);
+        assertEq(aWBTC.balanceOf(reserveFactorV2), expectedMintToTreasury);
         assertEq(wBTC.balanceOf(reserveFactorV2), 0);
         assertEq(staBal.balanceOf(reserveFactorV2), 0);
     }
