@@ -8,7 +8,6 @@ import "./interfaces/IAddressesProvider.sol";
 import {IVault} from "./interfaces/IVault.sol";
 import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {ILendingPoolConfigurator} from "./interfaces/ILendingPoolConfigurator.sol";
-import "forge-std/console.sol";
 
 /// @title Payload to refactor AAVE Reserve Factor
 /// @author Austin Green
