@@ -44,7 +44,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     uint256 proposalId;
 
-    IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
     address private constant reserveFactorV2 = 0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c;
     address private constant emergencyReserve = 0x2fbB0c60a41cB7Ea5323071624dCEAD3d213D0Fa;
@@ -58,11 +57,15 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
 
     address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
+    IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
+    IERC20 private constant staBal = IERC20(0xFeadd389a5c427952D8fdb8057D6C8ba1156cC56);
+    IERC20 private constant wBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     uint256 private constant originalV1EthBalance = 104432825860028928474;
+    uint256 private constant originalAwBtcBalance = 243909866;
+    uint256 private constant originalWBtcBalance = 17674774;
 
     IERC20[] private tokens = [
-        IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
+        wBTC,
         IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F),
         IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48),
         IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7),
@@ -198,6 +201,25 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         updatedV2Rf.transfer(ethAddress, randomAddr, 50 ether);
         assertEq(randomAddr.balance, 50 ether);
         assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
+    }
+
+    function testJoinBalancerPool() public {
+        // confirm pre-proposal aWBTC and wBTC balance
+        uint256 awBtcBalance = aWBTC.balanceOf(reserveFactorV2);
+        uint256 wBtcBalance = wBTC.balanceOf(reserveFactorV2);
+        uint256 staBalBalance = staBal.balanceOf(reserveFactorV2);
+        assertEq(awBtcBalance, originalAwBtcBalance);
+        assertEq(wBtcBalance, originalWBtcBalance);
+        assertEq(staBalBalance, 0);
+
+        _executeProposal();
+
+        uint256 expectedMintToTreasury = 139770;
+
+        // check that all awBtc was redeemed and max allocated to balancer pool
+        assertEq(aWBTC.balanceOf(reserveFactorV2), expectedMintToTreasury);
+        assertEq(wBTC.balanceOf(reserveFactorV2), 0);
+        assertEq(staBal.balanceOf(reserveFactorV2), 0);
     }
 
     function testDpiBorrowing() public {
