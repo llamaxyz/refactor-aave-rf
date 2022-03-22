@@ -125,31 +125,12 @@ contract ProposalPayload {
     }
 
     function joinBalancerPool() external {
-        console.log("----- START -----");
-        console.log("EXECUTOR WBTC BALANCE: ", IERC20(wBtc).balanceOf(address(this)));
-        console.log("ECO RESERVE WBTC BALANCE: ", IERC20(wBtc).balanceOf(address(reserveFactorV2)));
-        console.log("EXECUTOR AWBTC BALANCE: ", aWBTC.balanceOf(address(this)));
-        console.log("ECO RESERVE AWBTC BALANCE: ", aWBTC.balanceOf(address(reserveFactorV2)));
-
         // Transfer wBTC and aWBTC to this contract
         collectorController.transfer(IERC20(wBtc), address(this), IERC20(wBtc).balanceOf(address(reserveFactorV2)));
         collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(address(reserveFactorV2)));
 
-        console.log("----- AFTER TRANSFER -----");
-        console.log("EXECUTOR WBTC BALANCE: ", IERC20(wBtc).balanceOf(address(this)));
-        console.log("ECO RESERVE WBTC BALANCE: ", IERC20(wBtc).balanceOf(address(reserveFactorV2)));
-        console.log("EXECUTOR AWBTC BALANCE: ", aWBTC.balanceOf(address(this)));
-        console.log("ECO RESERVE AWBTC BALANCE: ", aWBTC.balanceOf(address(reserveFactorV2)));
-
         // Redeem aWBTC for wBTC
-        uint256 withdrawn = lendingPool.withdraw(address(wBtc), type(uint256).max, address(this));
-
-        console.log("----- AFTER REDEMPTION -----");
-        console.log("WITHDRAWN AMOUNT: ", withdrawn);
-        console.log("EXECUTOR WBTC BALANCE: ", IERC20(wBtc).balanceOf(address(this)));
-        console.log("ECO RESERVE WBTC BALANCE: ", IERC20(wBtc).balanceOf(address(reserveFactorV2)));
-        console.log("EXECUTOR AWBTC BALANCE: ", aWBTC.balanceOf(address(this)));
-        console.log("ECO RESERVE AWBTC BALANCE: ", aWBTC.balanceOf(address(reserveFactorV2)));
+        lendingPool.withdraw(address(wBtc), type(uint256).max, address(this));
 
         // Deposit wBTC in balancer btc vault
         address[] memory poolAddresses = new address[](3);
