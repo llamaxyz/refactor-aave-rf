@@ -53,4 +53,19 @@ interface IVault {
         bytes userData;
         bool fromInternalBalance;
     }
+
+    // Internal Balance
+    //
+    // Users can deposit tokens into the Vault, where they are allocated to their Internal Balance, and later
+    // transferred or withdrawn. It can also be used as a source of tokens when joining Pools, as a destination
+    // when exiting them, and as either when performing swaps. This usage of Internal Balance results in greatly reduced
+    // gas costs when compared to relying on plain ERC20 transfers, leading to large savings for frequent users.
+    //
+    // Internal Balance management features batching, which means a single contract call can be used to perform multiple
+    // operations of different kinds, with different senders and recipients, at once.
+
+    /**
+     * @dev Returns `user`'s Internal Balance for a set of tokens.
+     */
+    function getInternalBalance(address user, address[] memory tokens) external view returns (uint256[] memory);
 }
