@@ -5,8 +5,6 @@ import "./interfaces/IReserveFactorV1.sol";
 import "./interfaces/IEcosystemReserve.sol";
 import "./interfaces/IControllerV2Collector.sol";
 import "./interfaces/IAddressesProvider.sol";
-import {IVault} from "./interfaces/IVault.sol";
-import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {ILendingPoolConfigurator} from "./interfaces/ILendingPoolConfigurator.sol";
 
 /// @title Payload to refactor AAVE Reserve Factor
@@ -28,9 +26,6 @@ contract ProposalPayload {
 
     /// @notice usdt token.
     address private constant usdt = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-
-    /// @notice aWBTC token.
-    IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
 
     /// @notice AAVE's V1 Reserve Factor.
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
@@ -59,16 +54,6 @@ contract ProposalPayload {
     /// @notice AAVE V2 LendingPoolConfigurator
     ILendingPoolConfigurator private constant configurator =
         ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
-
-    /// @notice Balancer V2 pool.
-    IVault private constant vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
-
-    /// @notice Stable BTC balancer pool id.
-    /// @dev LP token symbol is `staBAL3-BTC`
-    bytes32 private constant balancerBtcPoolId = 0xfeadd389a5c427952d8fdb8057d6c8ba1156cc56000000000000000000000066;
-
-    /// @notice AAVE V2 lending pool.
-    ILendingPool private constant lendingPool = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
 
     // Just including this for testing purposes, we'll have the address of the new impl before deploying
     constructor(address _tokenDistributorImpl, address _ecosystemReserveImpl) {
@@ -121,41 +106,5 @@ contract ProposalPayload {
         tokenAddresses[11] = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // AAVE
         tokenAddresses[12] = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // ETH
         reserveFactorV1.distribute(tokenAddresses);
-    }
-
-    function joinBalancerPool() external {
-        // Transfer wBTC and aWBTC to this contract
-        collectorController.transfer(IERC20(wBtc), address(this), IERC20(wBtc).balanceOf(address(reserveFactorV2)));
-        collectorController.transfer(aWBTC, address(this), aWBTC.balanceOf(address(reserveFactorV2)));
-
-        // Redeem aWBTC for wBTC
-        lendingPool.withdraw(address(wBtc), type(uint256).max, address(this));
-
-        // Deposit wBTC in balancer btc vault
-        address[] memory poolAddresses = new address[](3);
-        poolAddresses[0] = wBtc;
-        poolAddresses[1] = 0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D;
-        poolAddresses[2] = 0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6;
-
-        uint256[] memory maxAmountsIn = new uint256[](3);
-        maxAmountsIn[0] = IERC20(wBtc).balanceOf(address(this));
-        maxAmountsIn[1] = 0;
-        maxAmountsIn[2] = 0;
-
-        // EXACT_TOKENS_IN_FOR_BPT_OUT
-        uint256 JoinKindSingleToken = 1;
-        uint256 minBptAmountOut = 0; // need to calculate based on our wBtc balance and max slippage we'll accept
-        uint256 enterTokenIndex = 0;
-        bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, minBptAmountOut, enterTokenIndex);
-
-        IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
-            assets: poolAddresses,
-            maxAmountsIn: maxAmountsIn,
-            userData: userDataEncoded,
-            fromInternalBalance: false
-        });
-
-        IERC20(wBtc).approve(address(vault), IERC20(wBtc).balanceOf(address(this)));
-        vault.joinPool(balancerBtcPoolId, address(this), address(reserveFactorV2), request);
     }
 }

@@ -14,19 +14,10 @@ import "../interfaces/IEcosystemReserve.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IProtocolDataProvider.sol";
-import {IVault} from "../interfaces/IVault.sol";
 
 import "../ProposalPayload.sol";
 
 contract ProposalPayloadTest is DSTest, stdCheats {
-    event PoolBalanceChanged(
-        bytes32 indexed poolId,
-        address indexed liquidityProvider,
-        IERC20[] tokens,
-        int256[] deltas,
-        uint256[] protocolFeeAmounts
-    );
-
     Vm vm = Vm(HEVM_ADDRESS);
 
     address aaveTokenAddress = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
@@ -65,7 +56,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
 
-    IVault private constant balancerPool = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
     address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
     IERC20 private constant staBal = IERC20(0xFeadd389a5c427952D8fdb8057D6C8ba1156cC56);
@@ -103,10 +93,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         51433343686459520786,
         650810411734831217
     ];
-
-    /// @notice Stable BTC balancer pool id.
-    /// @dev LP token symbol is `staBAL3-BTC`
-    bytes32 private constant balancerBtcPoolId = 0xfeadd389a5c427952d8fdb8057d6c8ba1156cc56000000000000000000000066;
 
     function setUp() public {
         // aave whales may need to be updated based on the block being used
@@ -175,12 +161,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         assertEq(v1EthNewBalance, 0);
 
         for (uint256 i; i < tokens.length; i++) {
-            if (i == 0) {
-                // wbtc should be empty because of balancer pool deposit
-                assertEq(tokens[i].balanceOf(reserveFactorV2), 0);
-            } else {
-                assertEq(tokens[i].balanceOf(reserveFactorV2), v2OriginalBalances[i] + balances[i]);
-            }
+            assertEq(tokens[i].balanceOf(reserveFactorV2), v2OriginalBalances[i] + balances[i]);
         }
         assertEq(reserveFactorV2.balance, v1EthBalance + v2EthBalance);
     }
@@ -215,48 +196,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         updatedV2Rf.transfer(ethAddress, randomAddr, 50 ether);
         assertEq(randomAddr.balance, 50 ether);
         assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
-    }
-
-    function testJoinBalancerPool() public {
-        // confirm pre-proposal aWBTC and wBTC balance
-        uint256 awBtcBalance = aWBTC.balanceOf(reserveFactorV2);
-        uint256 wBtcBalance = wBTC.balanceOf(reserveFactorV2);
-        uint256 staBalBalance = staBal.balanceOf(reserveFactorV2);
-        assertEq(awBtcBalance, originalAwBtcBalance);
-        assertEq(wBtcBalance, originalWBtcBalance);
-        assertEq(staBalBalance, 0);
-
-        IERC20[] memory poolAddresses = new IERC20[](3);
-        poolAddresses[0] = wBTC;
-        poolAddresses[1] = IERC20(0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D);
-        poolAddresses[2] = IERC20(0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6);
-
-        int256[] memory deltas = new int256[](3);
-        deltas[0] = 1;
-        deltas[1] = 0;
-        deltas[2] = 0;
-
-        uint256[] memory protocolFeeAmounts = new uint256[](3);
-        protocolFeeAmounts[0] = 0;
-        protocolFeeAmounts[1] = 684330;
-        protocolFeeAmounts[2] = 0;
-
-        vm.expectEmit(true, true, false, true);
-        emit PoolBalanceChanged(
-            balancerBtcPoolId,
-            aaveGovernanceShortExecutor,
-            poolAddresses,
-            deltas,
-            protocolFeeAmounts
-        );
-        _executeProposal();
-
-        uint256 expectedMintToTreasury = 139770;
-
-        // check that all awBtc was redeemed and max allocated to balancer pool
-        assertEq(aWBTC.balanceOf(reserveFactorV2), expectedMintToTreasury);
-        assertEq(wBTC.balanceOf(reserveFactorV2), 0);
-        assertEq(staBal.balanceOf(reserveFactorV2), 0);
     }
 
     function testDpiBorrowing() public {
@@ -302,12 +241,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         signatures.push("distributeTokens()");
         calldatas.push(emptyBytes);
         withDelegatecalls.push(false);
-
-        targets.push(proposalPayloadAddress);
-        values.push(0);
-        signatures.push("joinBalancerPool()");
-        calldatas.push(emptyBytes);
-        withDelegatecalls.push(true);
 
         vm.prank(aaveWhales[0]);
         aaveGovernanceV2.create(shortExecutor, targets, values, signatures, calldatas, withDelegatecalls, ipfsHash);
