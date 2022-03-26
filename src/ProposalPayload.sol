@@ -8,24 +8,12 @@ import "./interfaces/IAddressesProvider.sol";
 import {ILendingPoolConfigurator} from "./interfaces/ILendingPoolConfigurator.sol";
 
 /// @title Payload to refactor AAVE Reserve Factor
-/// @author Austin Green
-/// @notice Provides an execute function for Aave governance to refactor its reserve factor.
+/// @author Austin Green and Noah Citron
+/// @notice Provides an execute function for Aave governance to refactor its reserve factor and enable DPI borrowing.
 contract ProposalPayload {
     /*///////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice wBtc token.
-    address private constant wBtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
-
-    /// @notice dai token.
-    address private constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-
-    /// @notice usdc token.
-    address private constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
-    /// @notice usdt token.
-    address private constant usdt = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
     /// @notice AAVE's V1 Reserve Factor.
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
@@ -91,10 +79,10 @@ contract ProposalPayload {
     function distributeTokens() external {
         // Distribute all tokens with meaningful balances to v2
         address[] memory tokenAddresses = new address[](13);
-        tokenAddresses[0] = wBtc;
-        tokenAddresses[1] = dai;
-        tokenAddresses[2] = usdc;
-        tokenAddresses[3] = usdt;
+        tokenAddresses[0] = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599; // WBTC
+        tokenAddresses[1] = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI
+        tokenAddresses[2] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
+        tokenAddresses[3] = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT
         tokenAddresses[4] = 0xdd974D5C2e2928deA5F71b9825b8b646686BD200; // KNC
         tokenAddresses[5] = 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2; // MKR
         tokenAddresses[6] = 0x0F5D2fB29fb7d3CFeE444a200298f468908cC942; // MANA

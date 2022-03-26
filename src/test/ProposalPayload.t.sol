@@ -57,15 +57,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
 
     address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    IERC20 private constant aWBTC = IERC20(0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656);
-    IERC20 private constant staBal = IERC20(0xFeadd389a5c427952D8fdb8057D6C8ba1156cC56);
-    IERC20 private constant wBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     uint256 private constant originalV1EthBalance = 104432825860028928474;
-    uint256 private constant originalAwBtcBalance = 243909866;
-    uint256 private constant originalWBtcBalance = 17674774;
 
     IERC20[] private tokens = [
-        wBTC,
+        IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
         IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F),
         IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48),
         IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7),
