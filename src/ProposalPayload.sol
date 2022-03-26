@@ -61,7 +61,7 @@ contract ProposalPayload {
         ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
 
     /// @notice Balancer V2 pool.
-    IVault private constant balancerPool = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+    IVault private constant vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
 
     /// @notice Stable BTC balancer pool id.
     /// @dev LP token symbol is `staBAL3-BTC`
@@ -142,10 +142,11 @@ contract ProposalPayload {
         maxAmountsIn[1] = 0;
         maxAmountsIn[2] = 0;
 
-        uint256 JoinKindSingleToken = 2;
-        uint256 bptAmountOut = 0;
+        // EXACT_TOKENS_IN_FOR_BPT_OUT
+        uint256 JoinKindSingleToken = 1;
+        uint256 minBptAmountOut = 0; // need to calculate based on our wBtc balance and max slippage we'll accept
         uint256 enterTokenIndex = 0;
-        bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, bptAmountOut, enterTokenIndex);
+        bytes memory userDataEncoded = abi.encode(JoinKindSingleToken, minBptAmountOut, enterTokenIndex);
 
         IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
             assets: poolAddresses,
@@ -154,7 +155,7 @@ contract ProposalPayload {
             fromInternalBalance: false
         });
 
-        IERC20(wBtc).approve(address(balancerPool), IERC20(wBtc).balanceOf(address(this)));
-        balancerPool.joinPool(balancerBtcPoolId, address(this), address(reserveFactorV2), request);
+        IERC20(wBtc).approve(address(vault), IERC20(wBtc).balanceOf(address(this)));
+        vault.joinPool(balancerBtcPoolId, address(this), address(reserveFactorV2), request);
     }
 }
