@@ -21,11 +21,6 @@ contract ProposalPayload {
     /// @notice AAVE's V2 Reserve Factor.
     IEcosystemReserve private constant reserveFactorV2 = IEcosystemReserve(0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c);
 
-    /// @notice Provides the logic for the V2 address to set ERC20 approvals.
-    /// @notice Approvals only be initiated by AAVE's governance executor.
-    IControllerV2Collector private constant collectorController =
-        IControllerV2Collector(0x7AB1e5c406F36FE20Ce7eBa528E182903CA8bFC7);
-
     /// @notice Provides address mapping for AAVE.
     IAddressesProvider private constant addressProvider =
         IAddressesProvider(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
@@ -64,10 +59,7 @@ contract ProposalPayload {
         );
 
         // Upgrade to new implementation contract that has ability to transfer ETH
-        reserveFactorV2.upgradeToAndCall(
-            ecosystemReserveImpl,
-            abi.encodeWithSignature("initialize(address)", address(collectorController))
-        );
+        reserveFactorV2.upgradeTo(ecosystemReserveImpl);
 
         // Set token distributor for AAVE v1 to V2 RF
         addressProvider.setTokenDistributor(address(reserveFactorV2));
@@ -78,7 +70,7 @@ contract ProposalPayload {
 
     function distributeTokens() external {
         // Distribute all tokens with meaningful balances to v2
-        address[] memory tokenAddresses = new address[](13);
+        address[] memory tokenAddresses = new address[](16);
         tokenAddresses[0] = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599; // WBTC
         tokenAddresses[1] = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI
         tokenAddresses[2] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
@@ -91,8 +83,10 @@ contract ProposalPayload {
         tokenAddresses[9] = 0x514910771AF9Ca656af840dff83E8264EcF986CA; // LINK
         tokenAddresses[10] = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // UNI
         tokenAddresses[11] = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // AAVE
-        tokenAddresses[11] = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9; // AAVE
-        tokenAddresses[12] = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // ETH
+        tokenAddresses[12] = 0x80fB784B7eD66730e8b1DBd9820aFD29931aab03; // LEND
+        tokenAddresses[13] = 0x0D8775F648430679A709E98d2b0Cb6250d2887EF; // BAT
+        tokenAddresses[14] = 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F; // SNX
+        tokenAddresses[15] = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // ETH
         reserveFactorV1.distribute(tokenAddresses);
     }
 }

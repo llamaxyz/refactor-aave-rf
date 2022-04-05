@@ -71,7 +71,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         IERC20(0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e),
         IERC20(0x514910771AF9Ca656af840dff83E8264EcF986CA),
         IERC20(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984),
-        IERC20(0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9)
+        IERC20(0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9),
+        IERC20(0x80fB784B7eD66730e8b1DBd9820aFD29931aab03),
+        IERC20(0x0D8775F648430679A709E98d2b0Cb6250d2887EF),
+        IERC20(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F)
     ];
 
     uint256[] private balances = [
@@ -86,7 +89,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         29249800489993423,
         34279670671399439576,
         51433343686459520786,
-        650810411734831217
+        650810411734831217,
+        97624642688014916003,
+        250506184215430361840,
+        22156845112342110874
     ];
 
     function setUp() public {
@@ -131,7 +137,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     function testAssetDistribution() public {
         // cache v2 balances before gov proposal
-        uint256[] memory v2OriginalBalances = new uint256[](12);
+        uint256[] memory v2OriginalBalances = new uint256[](15);
 
         for (uint256 i; i < tokens.length; i++) {
             v2OriginalBalances[i] = tokens[i].balanceOf(reserveFactorV2);
