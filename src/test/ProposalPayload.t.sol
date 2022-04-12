@@ -199,6 +199,68 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
     }
 
+    function testEcosystemReserveTransfer() public {
+        // test transfer functionality before proposal execution
+        address alice = address(1337);
+        IERC20 aUsdc = IERC20(0xBcca60bB61934080951369a648Fb03DF4F96263C);
+        IERC20 dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+        IERC20 aCrv = IERC20(0x8dAE6Cb04688C62d939ed9B68d32Bc62e49970b1);
+        IERC20 wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+
+        uint256 aUsdcStartingBal = aUsdc.balanceOf(reserveFactorV2);
+        uint256 daiStartingBal = dai.balanceOf(reserveFactorV2);
+        uint256 aCrvStartingBal = aCrv.balanceOf(reserveFactorV2);
+        uint256 wbtcStartingBal = wbtc.balanceOf(reserveFactorV2);
+
+        uint256 aUsdcTransferAmount = 1_000e6;
+        uint256 daiTransferAmount = 10_000e18;
+        uint256 aCrvTransferAmount = 52_000e18;
+        uint256 wbtcTransferAmount = 5005;
+
+        vm.startPrank(address(collectorController));
+        IEcosystemReserve(reserveFactorV2).transfer(address(aUsdc), alice, aUsdcTransferAmount);
+        IEcosystemReserve(reserveFactorV2).transfer(address(dai), alice, daiTransferAmount);
+        IEcosystemReserve(reserveFactorV2).transfer(address(aCrv), alice, aCrvTransferAmount);
+        IEcosystemReserve(reserveFactorV2).transfer(address(wbtc), alice, wbtcTransferAmount);
+
+        assertEq(aUsdc.balanceOf(reserveFactorV2), aUsdcStartingBal - aUsdcTransferAmount);
+        assertEq(dai.balanceOf(reserveFactorV2), daiStartingBal - daiTransferAmount);
+        assertEq(aCrv.balanceOf(reserveFactorV2), aCrvStartingBal - aCrvTransferAmount);
+        assertEq(wbtc.balanceOf(reserveFactorV2), wbtcStartingBal - wbtcTransferAmount);
+
+        assertEq(aUsdc.balanceOf(alice), aUsdcTransferAmount);
+        assertEq(dai.balanceOf(alice), daiTransferAmount);
+        assertEq(aCrv.balanceOf(alice), aCrvTransferAmount);
+        assertEq(wbtc.balanceOf(alice), wbtcTransferAmount);
+        vm.stopPrank();
+
+        _executeProposal();
+
+        // ensure it works the same after
+        address bob = address(1338);
+
+        aUsdcStartingBal = aUsdc.balanceOf(reserveFactorV2);
+        daiStartingBal = dai.balanceOf(reserveFactorV2);
+        aCrvStartingBal = aCrv.balanceOf(reserveFactorV2);
+        wbtcStartingBal = wbtc.balanceOf(reserveFactorV2);
+
+        vm.startPrank(address(collectorController));
+        IEcosystemReserve(reserveFactorV2).transfer(address(aUsdc), bob, aUsdcTransferAmount);
+        IEcosystemReserve(reserveFactorV2).transfer(address(dai), bob, daiTransferAmount);
+        IEcosystemReserve(reserveFactorV2).transfer(address(aCrv), bob, aCrvTransferAmount);
+        IEcosystemReserve(reserveFactorV2).transfer(address(wbtc), bob, wbtcTransferAmount);
+
+        assertEq(aUsdc.balanceOf(reserveFactorV2), aUsdcStartingBal - aUsdcTransferAmount);
+        assertEq(dai.balanceOf(reserveFactorV2), daiStartingBal - daiTransferAmount);
+        assertEq(aCrv.balanceOf(reserveFactorV2), aCrvStartingBal - aCrvTransferAmount);
+        assertEq(wbtc.balanceOf(reserveFactorV2), wbtcStartingBal - wbtcTransferAmount);
+
+        assertEq(aUsdc.balanceOf(bob), aUsdcTransferAmount);
+        assertEq(dai.balanceOf(bob), daiTransferAmount);
+        assertEq(aCrv.balanceOf(bob), aCrvTransferAmount);
+        assertEq(wbtc.balanceOf(bob), wbtcTransferAmount);
+    }
+
     function testDpiBorrowing() public {
         _executeProposal();
 
