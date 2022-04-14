@@ -156,9 +156,7 @@ contract AaveEcosystemReserve is VersionedInitializable {
         _;
     }
 
-    function initialize(address reserveController) external initializer {
-        _setFundsAdmin(reserveController);
-    }
+    function initialize() external initializer {}
 
     function approve(
         IERC20 token,
@@ -182,10 +180,6 @@ contract AaveEcosystemReserve is VersionedInitializable {
     }
 
     receive() external payable {}
-
-    function setFundsAdmin(address admin) public onlyFundsAdmin {
-        _setFundsAdmin(admin);
-    }
 
     function _setFundsAdmin(address admin) internal {
         _fundsAdmin = admin;

@@ -11,4 +11,10 @@ interface IEcosystemReserve {
         address,
         uint256
     ) external;
+
+    function approve(
+        address,
+        address,
+        uint256
+    ) external;
 }

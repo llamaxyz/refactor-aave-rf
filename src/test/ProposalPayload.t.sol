@@ -200,8 +200,8 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     }
 
     function testEcosystemReserveTransfer(uint256 modulus) public {
-        vm.assume(modulus != 0);
         // test transfer functionality before proposal execution
+        vm.assume(modulus != 0);
         address alice = address(0x1337);
 
         IERC20 dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
@@ -238,6 +238,36 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
         assertEq(daiCurrentBalance2, daiRemainingBal2);
         assertEq(bobBalance2, daiTransferAmount2);
+    }
+
+    function testEcosystemReserveApprove(uint256 modulus) public {
+        // test transfer functionality before proposal execution
+        vm.assume(modulus != 0);
+        address alice = address(0x1337);
+
+        IERC20 dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+        uint256 daiStartingBal = dai.balanceOf(reserveFactorV2);
+        uint256 daiApprovalAmount = daiStartingBal % modulus;
+        vm.assume(daiApprovalAmount > 0);
+
+        vm.startPrank(address(collectorController));
+        IEcosystemReserve(reserveFactorV2).approve(address(dai), alice, daiApprovalAmount);
+
+        assertEq(dai.allowance(reserveFactorV2, alice), daiApprovalAmount);
+
+        vm.stopPrank();
+
+        _executeProposal();
+
+        address bob = address(0x1338);
+        uint256 daiStartingBal2 = dai.balanceOf(reserveFactorV2);
+        uint256 daiApprovalAmount2 = daiStartingBal2 % modulus;
+        vm.assume(daiApprovalAmount2 > 0);
+
+        vm.startPrank(address(collectorController));
+        IEcosystemReserve(reserveFactorV2).approve(address(dai), bob, daiApprovalAmount2);
+
+        assertEq(dai.allowance(reserveFactorV2, bob), daiApprovalAmount2);
     }
 
     function testDpiBorrowing() public {
