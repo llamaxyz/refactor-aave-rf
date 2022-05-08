@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 pragma abicoder v2;
 
 import {IAaveGovernanceV2} from "./IAaveGovernanceV2.sol";
@@ -117,10 +117,7 @@ interface IExecutorWithTimelock {
      * @param proposalId Id of the proposal against which to test
      * @return true of proposal is over grace period
      **/
-    function isProposalOverGracePeriod(
-        IAaveGovernanceV2 governance,
-        uint256 proposalId
-    ) external view returns (bool);
+    function isProposalOverGracePeriod(IAaveGovernanceV2 governance, uint256 proposalId) external view returns (bool);
 
     /**
      * @dev Getter of grace period constant

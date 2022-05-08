@@ -10,7 +10,6 @@ import {Vm} from "forge-std/Vm.sol";
 
 // contract dependencies
 import "../interfaces/IAaveGovernanceV2.sol";
-import "../interfaces/IEcosystemReserve.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IProtocolDataProvider.sol";
@@ -30,10 +29,10 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     IExecutorWithTimelock shortExecutor = IExecutorWithTimelock(aaveGovernanceShortExecutor);
 
     address[] private aaveWhales;
+    address private llamaProposer = 0x5B3bFfC0bcF8D4cAEC873fDcF719F60725767c98;
 
     address private proposalPayloadAddress;
     address private tokenDistributorAddress;
-    address private ecosystemReserveAddress;
 
     address[] private targets;
     uint256[] private values;
@@ -49,15 +48,13 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address private constant emergencyReserve = 0x2fbB0c60a41cB7Ea5323071624dCEAD3d213D0Fa;
     IAddressesProvider private constant addressProvider =
         IAddressesProvider(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
-    IControllerV2Collector private constant collectorController =
-        IControllerV2Collector(0x7AB1e5c406F36FE20Ce7eBa528E182903CA8bFC7);
 
     IProtocolDataProvider private constant dataProvider =
         IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
 
     address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint256 private constant originalV1EthBalance = 104432825860028928474;
+    uint256 private constant originalV1EthBalance = 104439454875477877610;
 
     IERC20[] private tokens = [
         IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
@@ -78,19 +75,19 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     ];
 
     uint256[] private balances = [
-        26896451,
-        239455415285533321239318,
-        179497214695,
-        1155771700,
+        26896452,
+        240207569143888085646039,
+        179515048641,
+        1156029586,
         810952180672149368627,
-        483375892899443637,
+        490095716250032041,
         302200436866856166373,
         690230097270865694228,
-        29249800489993423,
-        34279670671399439576,
+        29249891848468059,
+        34332040401098059151,
         51433343686459520786,
         650810411734831217,
-        97624642688014916003,
+        97625888338530404906,
         250506184215430361840,
         22156845112342110874
     ];
@@ -177,99 +174,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         assertEq(addressProvider.getTokenDistributor(), reserveFactorV2);
     }
 
-    function testEcosystemReserveETH() public {
-        // confirm ecosystem reserve can't receive eth
-        uint256 v1EthBalance = address(reserveFactorV1).balance;
-        (bool success1, ) = reserveFactorV2.call{value: 100 ether}("");
-        assertTrue(!success1, "RECEIVED_ETHER");
-
-        _executeProposal();
-
-        // check ecosystem reserve can receive eth after proposal
-        (bool success2, ) = reserveFactorV2.call{value: 100 ether}("");
-        assertTrue(success2, "DID_NOT_RECEIVED_ETHER");
-
-        // check ecosystem reserve can transfer eth after proposal
-        IEcosystemReserve updatedV2Rf = IEcosystemReserve(reserveFactorV2);
-        address randomAddr = 0x00Be3826e98a5e26C022811001e740Ca00e2D01f;
-
-        vm.prank(address(collectorController));
-        updatedV2Rf.transfer(ethAddress, randomAddr, 50 ether);
-        assertEq(randomAddr.balance, 50 ether);
-        assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
-    }
-
-    function testEcosystemReserveTransfer(uint256 modulus) public {
-        // test transfer functionality before proposal execution
-        vm.assume(modulus != 0);
-        address alice = address(0x1337);
-
-        IERC20 dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-        uint256 daiStartingBal = dai.balanceOf(reserveFactorV2);
-        uint256 daiTransferAmount = daiStartingBal % modulus;
-        vm.assume(daiTransferAmount > 0);
-
-        vm.startPrank(address(collectorController));
-        IEcosystemReserve(reserveFactorV2).transfer(address(dai), alice, daiTransferAmount);
-
-        uint256 daiRemainingBal = daiStartingBal - daiTransferAmount;
-        uint256 daiCurrentBalance = dai.balanceOf(reserveFactorV2);
-        uint256 aliceBalance = dai.balanceOf(alice);
-
-        assertEq(daiCurrentBalance, daiRemainingBal);
-        assertEq(aliceBalance, daiTransferAmount);
-
-        vm.stopPrank();
-
-        _executeProposal();
-
-        // ensure it works the same post-execution
-        address bob = address(0x1338);
-        uint256 daiStartingBal2 = dai.balanceOf(reserveFactorV2);
-        uint256 daiTransferAmount2 = daiStartingBal2 % modulus;
-        vm.assume(daiTransferAmount2 > 0);
-
-        vm.startPrank(address(collectorController));
-        IEcosystemReserve(reserveFactorV2).transfer(address(dai), bob, daiTransferAmount2);
-
-        uint256 daiRemainingBal2 = daiStartingBal2 - daiTransferAmount2;
-        uint256 daiCurrentBalance2 = dai.balanceOf(reserveFactorV2);
-        uint256 bobBalance2 = dai.balanceOf(bob);
-
-        assertEq(daiCurrentBalance2, daiRemainingBal2);
-        assertEq(bobBalance2, daiTransferAmount2);
-    }
-
-    function testEcosystemReserveApprove(uint256 modulus) public {
-        // test transfer functionality before proposal execution
-        vm.assume(modulus != 0);
-        address alice = address(0x1337);
-
-        IERC20 dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-        uint256 daiStartingBal = dai.balanceOf(reserveFactorV2);
-        uint256 daiApprovalAmount = daiStartingBal % modulus;
-        vm.assume(daiApprovalAmount > 0);
-
-        vm.startPrank(address(collectorController));
-        IEcosystemReserve(reserveFactorV2).approve(address(dai), alice, daiApprovalAmount);
-
-        assertEq(dai.allowance(reserveFactorV2, alice), daiApprovalAmount);
-
-        vm.stopPrank();
-
-        _executeProposal();
-
-        address bob = address(0x1338);
-        uint256 daiStartingBal2 = dai.balanceOf(reserveFactorV2);
-        uint256 daiApprovalAmount2 = daiStartingBal2 % modulus;
-        vm.assume(daiApprovalAmount2 > 0);
-
-        vm.startPrank(address(collectorController));
-        IEcosystemReserve(reserveFactorV2).approve(address(dai), bob, daiApprovalAmount2);
-
-        assertEq(dai.allowance(reserveFactorV2, bob), daiApprovalAmount2);
-    }
-
     function testDpiBorrowing() public {
         _executeProposal();
 
@@ -295,9 +199,8 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     function _createProposal() public {
         // Deploy TokenDistributor implementation contract
         tokenDistributorAddress = deployCode("TokenDistributor.sol:TokenDistributor");
-        ecosystemReserveAddress = deployCode("AaveEcosystemReserve.sol:AaveEcosystemReserve");
 
-        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress, ecosystemReserveAddress);
+        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress);
         proposalPayloadAddress = address(proposalPayload);
 
         bytes memory emptyBytes;
@@ -314,7 +217,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         calldatas.push(emptyBytes);
         withDelegatecalls.push(false);
 
-        vm.prank(aaveWhales[0]);
+        vm.prank(llamaProposer);
         aaveGovernanceV2.create(shortExecutor, targets, values, signatures, calldatas, withDelegatecalls, ipfsHash);
         proposalId = aaveGovernanceV2.getProposalsCount() - 1;
     }

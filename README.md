@@ -7,8 +7,6 @@ We will independently deploy the `ProposalPayload` contract and propose an AIP t
 - Follow the [foundry installation instructions](https://github.com/gakonst/foundry#installation)
 
 ```
-$ echo 'export ALCHEMY_URL=https://eth-mainnet.alchemyapi.io/v2/<API_KEY>' >> ~/.zshrc
-$ source ~/.zshrc
 $ git clone https://github.com/llama-community/refactor-aave-rf.git
 $ cd refactor-aave-rf
 $ git submodule update --init --recursive
@@ -17,6 +15,5 @@ $ git submodule update --init --recursive
 ## Tests
 
 ```
-$ make test # run tests without traces
-$ make trace # run tests with traces
+$ make test
 ```

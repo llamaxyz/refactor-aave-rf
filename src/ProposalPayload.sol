@@ -2,8 +2,6 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./interfaces/IReserveFactorV1.sol";
-import "./interfaces/IEcosystemReserve.sol";
-import "./interfaces/IControllerV2Collector.sol";
 import "./interfaces/IAddressesProvider.sol";
 import {ILendingPoolConfigurator} from "./interfaces/ILendingPoolConfigurator.sol";
 
@@ -19,7 +17,7 @@ contract ProposalPayload {
     IReserveFactorV1 private constant reserveFactorV1 = IReserveFactorV1(0xE3d9988F676457123C5fD01297605efdD0Cba1ae);
 
     /// @notice AAVE's V2 Reserve Factor.
-    IEcosystemReserve private constant reserveFactorV2 = IEcosystemReserve(0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c);
+    address private constant reserveFactorV2 = 0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c;
 
     /// @notice Provides address mapping for AAVE.
     IAddressesProvider private constant addressProvider =
@@ -27,9 +25,6 @@ contract ProposalPayload {
 
     /// @notice Token distributor implementation contract.
     address private immutable tokenDistributorImpl;
-
-    /// @notice Ecosystem Reserve implementation contract.
-    address private immutable ecosystemReserveImpl;
 
     /// @notice DPI token address.
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
@@ -39,16 +34,15 @@ contract ProposalPayload {
         ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
 
     // Just including this for testing purposes, we'll have the address of the new impl before deploying
-    constructor(address _tokenDistributorImpl, address _ecosystemReserveImpl) {
+    constructor(address _tokenDistributorImpl) {
         tokenDistributorImpl = _tokenDistributorImpl;
-        ecosystemReserveImpl = _ecosystemReserveImpl;
     }
 
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {
         // Upgrade to new implementation contract and direct all funds to v2
         address[] memory receivers = new address[](1);
-        receivers[0] = address(reserveFactorV2);
+        receivers[0] = reserveFactorV2;
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100_00;
@@ -58,11 +52,8 @@ contract ProposalPayload {
             abi.encodeWithSignature("initialize(address[],uint256[])", receivers, amounts)
         );
 
-        // Upgrade to new implementation contract that has ability to transfer ETH
-        reserveFactorV2.upgradeTo(ecosystemReserveImpl);
-
         // Set token distributor for AAVE v1 to V2 RF
-        addressProvider.setTokenDistributor(address(reserveFactorV2));
+        addressProvider.setTokenDistributor(reserveFactorV2);
 
         // enable DPI borrow
         configurator.enableBorrowingOnReserve(dpi, false);

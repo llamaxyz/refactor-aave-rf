@@ -1,3 +1,4 @@
 cache/
 out/
-notes.md
+.env
+.env.prod
