@@ -24,7 +24,7 @@ contract ProposalPayload {
         IAddressesProvider(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
 
     /// @notice Token distributor implementation contract.
-    address private immutable tokenDistributorImpl;
+    address private constant tokenDistributorImpl = 0x55c559730cbCA5deB0bf9B85961957FfDf502603;
 
     /// @notice DPI token address.
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
@@ -32,11 +32,6 @@ contract ProposalPayload {
     /// @notice AAVE V2 LendingPoolConfigurator
     ILendingPoolConfigurator private constant configurator =
         ILendingPoolConfigurator(0x311Bb771e4F8952E6Da169b425E7e92d6Ac45756);
-
-    // Just including this for testing purposes, we'll have the address of the new impl before deploying
-    constructor(address _tokenDistributorImpl) {
-        tokenDistributorImpl = _tokenDistributorImpl;
-    }
 
     /// @notice The AAVE governance executor calls this function to implement the proposal.
     function execute() external {

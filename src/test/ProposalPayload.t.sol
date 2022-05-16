@@ -33,7 +33,6 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address private llamaProposer = 0x5B3bFfC0bcF8D4cAEC873fDcF719F60725767c98;
 
     address private proposalPayloadAddress;
-    address private tokenDistributorAddress;
 
     address[] private targets;
     uint256[] private values;
@@ -57,7 +56,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address private constant dpi = 0x1494CA1F11D487c2bBe4543E90080AeBa4BA3C2b;
 
     address private constant ethAddress = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint256 private constant originalV1EthBalance = 104439454875477877610;
+    uint256 private constant originalV1EthBalance = 104439493470365369405;
 
     IERC20[] private tokens = [
         IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
@@ -78,20 +77,20 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     ];
 
     uint256[] private balances = [
-        26896452,
-        240207569143888085646039,
-        179515048641,
-        1156029586,
-        810952180672149368627,
-        490095716250032041,
-        302200436866856166373,
-        690230097270865694228,
-        29249891848468059,
-        34332040401098059151,
+        26902239,
+        240207699929738592054129,
+        179885015076,
+        1187883243,
+        811639680672149368627,
+        490095719250032041,
+        323348555478065766626,
+        690245944882894553418,
+        29249964382846338,
+        80632831458864948044,
         51433343686459520786,
         650810411734831217,
         97625888338530404906,
-        250506184215430361840,
+        250520592007157365486,
         22156845112342110874
     ];
 
@@ -194,11 +193,11 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
         // check ecosystem reserve can transfer eth after proposal
         address randomAddr = 0x00Be3826e98a5e26C022811001e740Ca00e2D01f;
-        uint256 v1EthBalance = 104439454875477877610;
+
         vm.prank(address(aaveGovernanceShortExecutor));
         controller.transfer(address(reserveFactorV2), ethAddress, randomAddr, 50 ether);
         assertEq(randomAddr.balance, 50 ether);
-        assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
+        assertEq(reserveFactorV2.balance, originalV1EthBalance + 50 ether);
     }
 
     function _executeProposal() public {
@@ -216,9 +215,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     function _createProposal() public {
         // Deploy TokenDistributor implementation contract
-        tokenDistributorAddress = deployCode("TokenDistributor.sol:TokenDistributor");
-
-        ProposalPayload proposalPayload = new ProposalPayload(tokenDistributorAddress);
+        ProposalPayload proposalPayload = new ProposalPayload();
         proposalPayloadAddress = address(proposalPayload);
 
         bytes memory emptyBytes;
