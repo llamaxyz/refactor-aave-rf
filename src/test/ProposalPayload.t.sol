@@ -10,6 +10,7 @@ import {Vm} from "forge-std/Vm.sol";
 
 // contract dependencies
 import "../interfaces/IAaveGovernanceV2.sol";
+import "../interfaces/IEcosystemReserveController.sol";
 import "../interfaces/IExecutorWithTimelock.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IProtocolDataProvider.sol";
@@ -48,6 +49,8 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     address private constant emergencyReserve = 0x2fbB0c60a41cB7Ea5323071624dCEAD3d213D0Fa;
     IAddressesProvider private constant addressProvider =
         IAddressesProvider(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
+    IEcosystemReserveController private controller =
+        IEcosystemReserveController(0x3d569673dAa0575c936c7c67c4E6AedA69CC630C);
 
     IProtocolDataProvider private constant dataProvider =
         IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
@@ -181,6 +184,21 @@ contract ProposalPayloadTest is DSTest, stdCheats {
         (, , , , , , bool borrowEnabled, bool stableBorrowEnabled, , ) = dataProvider.getReserveConfigurationData(dpi);
         assertTrue(borrowEnabled, "DPI_BORROW_NOT_ENABLED");
         assertTrue(!stableBorrowEnabled, "DPI_STABLE_BORROW_ENABLED");
+    }
+
+    function testEcosystemReserveETH() public {
+        _executeProposal();
+        // check ecosystem reserve can receive eth
+        (bool success2, ) = reserveFactorV2.call{value: 100 ether}("");
+        assertTrue(success2, "DID_NOT_RECEIVED_ETHER");
+
+        // check ecosystem reserve can transfer eth after proposal
+        address randomAddr = 0x00Be3826e98a5e26C022811001e740Ca00e2D01f;
+        uint256 v1EthBalance = 104439454875477877610;
+        vm.prank(address(aaveGovernanceShortExecutor));
+        controller.transfer(address(reserveFactorV2), ethAddress, randomAddr, 50 ether);
+        assertEq(randomAddr.balance, 50 ether);
+        assertEq(reserveFactorV2.balance, v1EthBalance + 50 ether);
     }
 
     function _executeProposal() public {
