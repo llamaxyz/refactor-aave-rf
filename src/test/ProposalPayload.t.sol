@@ -78,7 +78,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
 
     uint256[] private balances = [
         26902239,
-        240207699929738592054129,
+        240207844929738592054129,
         179885015076,
         1187883243,
         811639680672149368627,
@@ -214,8 +214,7 @@ contract ProposalPayloadTest is DSTest, stdCheats {
     /*******************************************************************************/
 
     function _createProposal() public {
-        // Deploy TokenDistributor implementation contract
-        ProposalPayload proposalPayload = new ProposalPayload();
+        ProposalPayload proposalPayload = ProposalPayload(0x43D2A74c55eE4DB917251eC934b2fD03E3069bd6);
         proposalPayloadAddress = address(proposalPayload);
 
         bytes memory emptyBytes;
